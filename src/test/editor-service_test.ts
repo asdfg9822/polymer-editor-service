@@ -634,7 +634,7 @@ function editorTests(editorFactory: (basedir: string) => EditorService) {
       assert.containSubset(
           warnings, <Warning[]>[{
             code: 'could-not-load',
-            message: 'Unable to load import: Unexpected token ,',
+            message: 'Unable to load import: Unexpected token (18:8)',
             severity: Severity.ERROR,
             sourceRange: {
               file: 'editor-service/index.html',
@@ -664,7 +664,7 @@ function editorTests(editorFactory: (basedir: string) => EditorService) {
           warnings, <Warning[]>[{
             code: 'parse-error',
             severity: Severity.ERROR,
-            message: 'Unexpected token var',
+            message: 'Unexpected token (1:4)',
             sourceRange: {file: 'editor-service/index.html'}
           }]);
       const underliner =
@@ -691,7 +691,7 @@ function editorTests(editorFactory: (basedir: string) => EditorService) {
           await editorService.getWarningsForFile('js-parse-error.js');
       deepEqual(JSON.parse(JSON.stringify(warnings)), [{
                   code: 'parse-error',
-                  message: 'Unexpected token ,',
+                  message: 'Unexpected token (18:8)',
                   severity: Severity.ERROR,
                   sourceRange: {
                     file: 'js-parse-error.js',
