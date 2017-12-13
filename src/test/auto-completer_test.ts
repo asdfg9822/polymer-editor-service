@@ -15,11 +15,11 @@
 import {assert} from 'chai';
 import {readFileSync} from 'fs';
 import * as path from 'path';
-import {ResolvedUrl} from 'polymer-analyzer/lib/model/url';
 import {CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat} from 'vscode-languageserver/lib/main';
 
-import {createTestEnvironment} from './util';
 import {standardJavaScriptSnippets} from '../standard-snippets';
+
+import {createTestEnvironment} from './util';
 
 const fixtureDir = path.join(__dirname, '..', '..', 'src', 'test', 'static');
 
@@ -156,7 +156,7 @@ const attributeCompletions: CompletionItem[] = [
 ];
 
 suite('AutoCompleter', () => {
-  const indexFile = path.join('editor-service', 'index.html') as ResolvedUrl;
+  const indexFile = path.join('editor-service', 'index.html');
   const indexContents = readFileSync(path.join(fixtureDir, indexFile), 'utf-8');
   const tagPosition = {line: 7, column: 9};
   const tagPositionEnd = {line: 7, column: 21};
@@ -433,13 +433,18 @@ suite('AutoCompleter', () => {
         {isIncomplete: false, items: attributeCompletions});
   });
 
-  test(`Return JavaScript standard completions inside of script tags.`, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
-    await client.openFile(indexFile, '<script>\n\n</script>\n' + indexContents);
-    const completions =
-        await client.getCompletions(indexFile, {line: 1, column: 0});
-    assert.deepEqual(completions, {isIncomplete: false, items: standardJavaScriptSnippets});
-  });
+  test(
+      `Return JavaScript standard completions inside of script tags.`,
+      async() => {
+        const {client} = await createTestEnvironment(fixtureDir);
+        await client.openFile(
+            indexFile, '<script>\n\n</script>\n' + indexContents);
+        const completions =
+            await client.getCompletions(indexFile, {line: 1, column: 0});
+        assert.deepEqual(
+            completions,
+            {isIncomplete: false, items: standardJavaScriptSnippets});
+      });
 
   {
     const fooPropUsePosition = {line: 2, column: 16};

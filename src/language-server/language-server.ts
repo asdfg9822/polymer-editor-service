@@ -12,8 +12,9 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import {PackageUrlResolver} from 'polymer-analyzer';
 import * as util from 'util';
-import {ClientCapabilities, IConnection, InitializeResult, ServerCapabilities, TextDocuments} from 'vscode-languageserver';
+import {ClientCapabilities, IConnection, InitializeResult, ServerCapabilities, TextDocuments, TextDocumentSyncKind} from 'vscode-languageserver';
 import Uri from 'vscode-uri';
 
 import AnalyzerSynchronizer from './analyzer-synchronizer';
@@ -30,12 +31,9 @@ import Settings from './settings';
 import {Handler} from './util';
 
 export default class LanguageServer extends Handler {
-  private readonly converter: AnalyzerLSPConverter;
   protected readonly connection: IConnection;
-  private readonly documents: TextDocuments;
   readonly fileSynchronizer: FileSynchronizer;
-  private readonly diagnosticGenerator: DiagnosticGenerator;
-  private readonly settings: Settings;
+  private readonly syncKind: TextDocumentSyncKind;
 
   /** Get an initialized and ready language server. */
   static async initializeWithConnection(
@@ -98,59 +96,58 @@ export default class LanguageServer extends Handler {
 
     const workspacePath = workspaceUri.fsPath;
 
+    const urlResolver = new PackageUrlResolver({packageDir: workspacePath});
+
     // TODO(rictic): try out implementing an incrementally synced version of
     //     TextDocuments. Should be a performance win for editing large docs.
-    this.documents = new TextDocuments();
-    this.documents.listen(connection);
-    this.converter = new AnalyzerLSPConverter(workspaceUri);
+    const documents = new TextDocuments();
+    documents.listen(connection);
+    this.syncKind = documents.syncKind;
+    const converter = new AnalyzerLSPConverter(workspaceUri, urlResolver);
 
     this.fileSynchronizer = new FileSynchronizer(
-        connection, this.documents, workspacePath, this.converter, logger);
-
-    this.settings =
-        new Settings(connection, this.fileSynchronizer, this.converter);
-    this.disposables.push(this.settings);
-
-    logger.hookupSettings(this.settings);
+        connection, documents, workspacePath, converter, logger);
 
     logger.log(`\n\n\n\n\nInitialized with workspace path: ${workspacePath}`);
 
     const analyzerSynchronizer = new AnalyzerSynchronizer(
-        this.documents, this.fileSynchronizer, this.converter, logger);
+        documents, this.fileSynchronizer, logger, urlResolver);
 
-    this.diagnosticGenerator = new DiagnosticGenerator(
-        analyzerSynchronizer.analyzer, this.converter, connection,
-        this.settings, analyzerSynchronizer, this.documents);
-    this.disposables.push(this.diagnosticGenerator);
+    const settings = new Settings(
+        connection, this.fileSynchronizer, analyzerSynchronizer.analyzer);
+    this.disposables.push(settings);
+    logger.hookupSettings(settings);
+
+    const diagnosticGenerator = new DiagnosticGenerator(
+        analyzerSynchronizer.analyzer, converter, connection, settings,
+        analyzerSynchronizer, documents);
+    this.disposables.push(diagnosticGenerator);
 
     const commandExecutor =
-        new CommandExecutor(this.connection, this.diagnosticGenerator);
+        new CommandExecutor(this.connection, diagnosticGenerator);
     this.disposables.push(commandExecutor);
 
     const featureFinder = new FeatureFinder(analyzerSynchronizer.analyzer);
-    const hoverDocumenter = new HoverDocumenter(
-        this.connection, this.converter, featureFinder, logger);
+    const hoverDocumenter =
+        new HoverDocumenter(this.connection, converter, featureFinder, logger);
     this.disposables.push(hoverDocumenter);
 
     const autoCompleter = new AutoCompleter(
-        this.connection, this.converter, featureFinder,
+        this.connection, converter, featureFinder,
         analyzerSynchronizer.analyzer, clientCapabilities);
     this.disposables.push(autoCompleter);
 
     const definitionFinder = new DefinitionFinder(
-        this.connection, this.converter, featureFinder,
-        analyzerSynchronizer.analyzer, this.settings);
+        this.connection, converter, featureFinder,
+        analyzerSynchronizer.analyzer, settings);
     this.disposables.push(definitionFinder);
   }
 
   private capabilities(clientCapabilities: ClientCapabilities):
       ServerCapabilities {
     const ourCapabilities: ServerCapabilities = {
-      textDocumentSync: {
-        change: this.documents.syncKind,
-        openClose: true,
-        willSaveWaitUntil: true
-      },
+      textDocumentSync:
+          {change: this.syncKind, openClose: true, willSaveWaitUntil: true},
       completionProvider: {resolveProvider: false},
       hoverProvider: true,
       definitionProvider: true,

@@ -13,6 +13,7 @@
 
 import {assert} from 'chai';
 import * as path from 'path';
+import {Analyzer} from 'polymer-analyzer';
 import {DidChangeConfigurationNotification, DidOpenTextDocumentNotification, DidOpenTextDocumentParams} from 'vscode-languageserver';
 import URI from 'vscode-uri/lib';
 
@@ -22,9 +23,10 @@ import {createFileSynchronizer} from './util';
 
 suite('Settings', () => {
   function createSettings(debugging?: boolean) {
-    const {serverConnection, clientConnection, synchronizer, converter,
-           baseDir} = createFileSynchronizer(undefined, debugging);
-    const settings = new Settings(serverConnection, synchronizer, converter);
+    const {serverConnection, clientConnection, synchronizer, baseDir} =
+        createFileSynchronizer(undefined, debugging);
+    const settings = new Settings(
+        serverConnection, synchronizer, Analyzer.createForDirectory(baseDir));
     return {settings, serverConnection, clientConnection, baseDir};
   }
 

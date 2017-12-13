@@ -12,7 +12,7 @@
  */
 
 import * as path from 'path';
-import {Edit, Severity, SourcePosition, SourceRange, Warning} from 'polymer-analyzer';
+import {Edit, FileRelativeUrl, ResolvedUrl, Severity, SourcePosition, SourceRange, UrlResolver, Warning} from 'polymer-analyzer';
 import {Diagnostic, DiagnosticSeverity, Location, Position as LSPosition, Range as LSRange, TextEdit, WorkspaceEdit} from 'vscode-languageserver';
 import Uri from 'vscode-uri';
 
@@ -20,15 +20,21 @@ import Uri from 'vscode-uri';
  * Converts between Analyzer and Editor Service types and LSP types.
  */
 export default class AnalyzerLSPConverter {
-  private readonly workspaceUri: Uri;
-  constructor(workspaceUri: Uri) {
-    this.workspaceUri = workspaceUri;
+  constructor(
+      private readonly workspaceUri: Uri,
+      private readonly urlResolver: UrlResolver) {
   }
 
   getWorkspacePathToFile(document: {uri: string}): string {
     // TODO(rictic): if this isn't a file uri we should return undefined here.
     return path.relative(
         this.workspaceUri.fsPath, Uri.parse(document.uri).fsPath);
+  }
+
+  getAnalyzerUrl(document: {uri: string}): ResolvedUrl|undefined {
+    return this.urlResolver.resolve(
+        document.uri as FileRelativeUrl, this.urlResolver.packageUrl,
+        undefined);
   }
 
   getUriForLocalPath(localPath: string): string {
@@ -62,12 +68,15 @@ export default class AnalyzerLSPConverter {
     };
   }
 
-  convertLRangeToP({start, end}: LSRange, document: {uri: string}):
-      SourceRange {
+  convertLRangeToP({start, end}: LSRange, document: {uri: string}): SourceRange
+      |undefined {
+    const file = this.getAnalyzerUrl(document);
+    if (file === undefined) {
+      return undefined;
+    }
     return {
       start: {line: start.line, column: start.character},
-      end: {line: end.line, column: end.character},
-      file: this.getWorkspacePathToFile(document),
+      end: {line: end.line, column: end.character}, file,
     };
   }
 
@@ -94,7 +103,7 @@ export default class AnalyzerLSPConverter {
     const changes = edit.changes!;
     for (const polymerEdit of edits) {
       for (const replacement of polymerEdit) {
-        const uri = this.getUriForLocalPath(replacement.range.file);
+        const uri = replacement.range.file;
         if (!changes[uri]) {
           changes[uri] = [];
         }
@@ -107,9 +116,6 @@ export default class AnalyzerLSPConverter {
   }
 
   getLocation(sourceRange: SourceRange): Location {
-    return {
-      uri: this.getUriForLocalPath(sourceRange.file),
-      range: this.convertPRangeToL(sourceRange)
-    };
+    return {uri: sourceRange.file, range: this.convertPRangeToL(sourceRange)};
   }
 }

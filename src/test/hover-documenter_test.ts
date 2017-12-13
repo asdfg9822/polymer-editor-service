@@ -14,7 +14,6 @@
 
 import {assert} from 'chai';
 import * as path from 'path';
-import {ResolvedUrl} from 'polymer-analyzer/lib/model/url';
 
 import {createTestEnvironment} from './util';
 
@@ -47,8 +46,8 @@ suite('HoverDocumenter', function() {
   test(testName, async() => {
     const {client, server} = await createTestEnvironment(fixtureDir);
 
-    const contents =
-        await server.fileSynchronizer.urlLoader.load(indexFile as ResolvedUrl);
+    const contents = await server.fileSynchronizer.urlLoader.load(
+        client.converter.getAnalyzerUrl({uri: indexFile})!);
 
     // Add a newline at the beginning of the file, shifting the lines
     // down.

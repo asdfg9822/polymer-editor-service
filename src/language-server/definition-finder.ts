@@ -54,10 +54,10 @@ export default class DefinitionFinder extends Handler {
     });
 
     this.connection.onDocumentSymbol(async(params) => {
-      const localPath = converter.getWorkspacePathToFile(params.textDocument);
+      const url = params.textDocument.uri;
       const analysis =
-          await this.analyzer.analyze([localPath], 'get document symbols');
-      const maybeDocument = analysis.getDocument(localPath);
+          await this.analyzer.analyze([url], 'get document symbols');
+      const maybeDocument = analysis.getDocument(url);
       if (!(maybeDocument instanceof Document)) {
         return [];
       }
@@ -83,26 +83,21 @@ export default class DefinitionFinder extends Handler {
   private async getDefinition(
       textPosition: TextDocumentPositionParams,
       analysis?: Analysis): Promise<Location[]> {
-    const localPath =
-        this.converter.getWorkspacePathToFile(textPosition.textDocument);
     const sourceRanges = await this.getDefinitionsForFeatureAtPosition(
-        localPath, this.converter.convertPosition(textPosition.position),
-        analysis);
+        textPosition.textDocument.uri,
+        this.converter.convertPosition(textPosition.position), analysis);
     return sourceRanges.map((sr): Location => {
-      return {
-        uri: this.converter.getUriForLocalPath(sr.file),
-        range: this.converter.convertPRangeToL(sr)
-      };
+      return {uri: sr.file, range: this.converter.convertPRangeToL(sr)};
     });
   }
 
   private async getDefinitionsForFeatureAtPosition(
-      localPath: string, position: SourcePosition,
+      url: string, position: SourcePosition,
       analysis?: Analysis): Promise<SourceRange[]> {
     analysis =
-        analysis || await this.analyzer.analyze([localPath], 'get definitions');
+        analysis || await this.analyzer.analyze([url], 'get definitions');
     const featureResult =
-        await this.featureFinder.getFeatureAt(localPath, position, analysis);
+        await this.featureFinder.getFeatureAt(url, position, analysis);
     if (!featureResult) {
       return [];
     }
@@ -166,7 +161,7 @@ export default class DefinitionFinder extends Handler {
           })];
           locations.push(...propertyUses.map(f => {
             return {
-              uri: this.converter.getUriForLocalPath(f.sourceRange.file),
+              uri: f.sourceRange.file,
               range: this.converter.convertPRangeToL(f.sourceRange)
             };
           }));
@@ -179,10 +174,7 @@ export default class DefinitionFinder extends Handler {
                        externalPackages: true,
                      })].map(e => e.sourceRange);
       locations.push(...ranges.map(r => {
-        return {
-          uri: this.converter.getUriForLocalPath(r.file),
-          range: this.converter.convertPRangeToL(r)
-        };
+        return {uri: r.file, range: this.converter.convertPRangeToL(r)};
       }));
     }
 
@@ -225,8 +217,8 @@ export default class DefinitionFinder extends Handler {
   }
   private async getCodeLenses(params: CodeLensParams) {
     const analysis = await this.analyzer.analyzePackage('get code lenses');
-    const path = this.converter.getWorkspacePathToFile(params.textDocument);
-    const document = analysis.getDocument(path);
+    const uri = params.textDocument.uri;
+    const document = analysis.getDocument(uri);
     if (!(document instanceof Document)) {
       return [];
     }

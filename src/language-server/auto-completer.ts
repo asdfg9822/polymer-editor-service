@@ -19,12 +19,12 @@ import {ClientCapabilities, CompletionItem, CompletionItemKind, CompletionList, 
 import {TextDocumentPositionParams} from 'vscode-languageserver-protocol';
 
 import {AttributesSection, AttributeValue, TagName, TextNode} from '../ast-from-source-position';
+import {standardJavaScriptSnippets} from '../standard-snippets';
 
 import {LsAnalyzer} from './analyzer-synchronizer';
 import AnalyzerLSPConverter from './converter';
 import FeatureFinder, {DatabindingFeature} from './feature-finder';
 import {Handler} from './util';
-import {standardJavaScriptSnippets} from '../standard-snippets';
 
 
 /**
@@ -66,10 +66,9 @@ export default class AutoCompleter extends Handler {
 
   private async autoComplete(textPosition: TextDocumentPositionParams):
       Promise<CompletionList> {
-    const localPath =
-        this.converter.getWorkspacePathToFile(textPosition.textDocument);
-    const document = (await this.analyzer.analyze([localPath], 'autocomplete'))
-                         .getDocument(localPath);
+    const url = textPosition.textDocument.uri;
+    const document =
+        (await this.analyzer.analyze([url], 'autocomplete')).getDocument(url);
     if (!(document instanceof Document)) {
       return {isIncomplete: true, items: []};
     }
@@ -385,10 +384,7 @@ export default class AutoCompleter extends Handler {
   }
 
   private getStandardJavaScriptSnippetCompletions(): CompletionList {
-    return {
-      isIncomplete: false,
-      items: standardJavaScriptSnippets
-    };
+    return {isIncomplete: false, items: standardJavaScriptSnippets};
   }
 
   private createSortPrefixes(element: Element): Map<string|undefined, string> {
