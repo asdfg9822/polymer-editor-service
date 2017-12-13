@@ -145,6 +145,10 @@ export class TestClient {
     const init: InitializeParams = {
       rootPath: baseDir,
       rootUri: URI.file(baseDir).toString(),
+      // We must not specify a processId, because the editor service
+      // library will monitor the process at that id call process.exit()
+      // if that process is not found! From the outside it just looks like
+      // node is silently crashing. Very hard to debug!
       processId: null as any as number,
       initializationOptions: {},
       capabilities: {
