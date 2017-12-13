@@ -145,7 +145,7 @@ export class TestClient {
     const init: InitializeParams = {
       rootPath: baseDir,
       rootUri: URI.file(baseDir).toString(),
-      processId: -1,
+      processId: null as any as number,
       initializationOptions: {},
       capabilities: {
         textDocument: {
