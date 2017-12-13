@@ -19,7 +19,7 @@
     "lint": "tslint --project ./tsconfig.json",
     "test": "npm run clean && npm run build && mocha && npm run lint",
     "quicktest": "export QUICK_TESTS=true; npm run build || true && mocha",
-    "test:watch": "watchy -w src/ -- npm run quicktest --loglevel=silent",
+    "test:watch": "tsc-then -- npx mocha",
     "format": "find src test | grep '\\.js$\\|\\.ts$' | xargs ./node_modules/.bin/clang-format --style=file -i"
   },
   "devDependencies": {
@@ -32,6 +32,7 @@
     "memory-streams": "^0.1.0",
     "mocha": "^3",
     "source-map-support": "^0.4.2",
+    "tsc-then": "^1.0.0",
     "tslint": "^5",
     "typescript": "^2.4.2",
     "watchy": "^0.7"
