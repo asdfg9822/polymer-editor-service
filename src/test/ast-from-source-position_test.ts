@@ -12,8 +12,7 @@
  */
 
 import {assert} from 'chai';
-import {ResolvedUrl, SourcePosition} from 'polymer-analyzer';
-import {PackageUrlResolver} from 'polymer-analyzer';
+import {PackageUrlResolver, ResolvedUrl, SourcePosition} from 'polymer-analyzer';
 import {HtmlParser} from 'polymer-analyzer/lib/html/html-parser';
 
 import {getHtmlAstLocationForPosition} from '../ast-from-source-position';

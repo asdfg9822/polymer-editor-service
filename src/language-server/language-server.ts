@@ -12,7 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {PackageUrlResolver} from 'polymer-analyzer';
+import {UrlResolver} from 'polymer-analyzer';
 import * as util from 'util';
 import {ClientCapabilities, IConnection, InitializeResult, ServerCapabilities, TextDocuments, TextDocumentSyncKind} from 'vscode-languageserver';
 import Uri from 'vscode-uri';
@@ -53,7 +53,7 @@ export default class LanguageServer extends Handler {
     // When we get an initialization request we want to construct a server and
     // tell the client about its capabilities.
     const server = await new Promise<LanguageServer>((resolve, reject) => {
-      connection.onInitialize((params): InitializeResult => {
+      connection.onInitialize(async(params): Promise<InitializeResult> => {
         // Normalize across the two ways that the workspace may be
         // communicated to us.
         const workspaceUri = getWorkspaceUri(params.rootUri, params.rootPath);
@@ -64,8 +64,10 @@ export default class LanguageServer extends Handler {
           reject(error);
           throw error;
         }
-        const newServer =
-            new LanguageServer(connection, workspaceUri, params.capabilities);
+        const urlResolver =
+            await UrlResolver.createForDirectory(workspaceUri.fsPath);
+        const newServer = new LanguageServer(
+            connection, workspaceUri, params.capabilities, urlResolver);
         resolve(newServer);
         return {capabilities: newServer.capabilities(params.capabilities)};
       });
@@ -86,7 +88,7 @@ export default class LanguageServer extends Handler {
    */
   constructor(
       connection: IConnection, workspaceUri: Uri,
-      clientCapabilities: ClientCapabilities) {
+      clientCapabilities: ClientCapabilities, urlResolver: UrlResolver) {
     super();
     this.disposables.push(connection);
     this.connection = connection;
@@ -95,8 +97,6 @@ export default class LanguageServer extends Handler {
     this.disposables.push(logger);
 
     const workspacePath = workspaceUri.fsPath;
-
-    const urlResolver = new PackageUrlResolver({packageDir: workspacePath});
 
     // TODO(rictic): try out implementing an incrementally synced version of
     //     TextDocuments. Should be a performance win for editing large docs.
