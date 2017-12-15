@@ -36,7 +36,7 @@ suite('HoverDocumenter', function() {
       'when asking for docs at its tag name';
 
   test(testName, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
 
     assert.deepEqual(
         await client.getHover('editor-service/index.html', tagPosition),
@@ -45,7 +45,7 @@ suite('HoverDocumenter', function() {
 
   testName = 'it can still get element info after changing a file in memory';
   test(testName, async() => {
-    const {client, server} = await createTestEnvironment(fixtureDir);
+    const {client, server} = await createTestEnvironment({fixtureDir});
 
     const contents =
         await server.fileSynchronizer.urlLoader.load(indexFile as ResolvedUrl);
@@ -64,7 +64,7 @@ suite('HoverDocumenter', function() {
   });
 
   test('it supports getting an attribute description', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     assert.deepEqual(
         await client.getHover(indexFile, localAttributePosition),
         {contents: localAttributeDescription});
@@ -73,7 +73,7 @@ suite('HoverDocumenter', function() {
   testName = 'it supports getting a description of an attribute ' +
       'defined in a behavior';
   test(testName, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     assert.deepEqual(
         await client.getHover(indexFile, deepAttributePosition),
         {contents: deepAttributeDescription});
@@ -82,7 +82,7 @@ suite('HoverDocumenter', function() {
   const fooPropUsePosition = {line: 2, column: 16};
   const internalPropUsePosition = {line: 3, column: 12};
   test(`Give documentation for properties in databindings.`, async() => {
-    const {client, underliner} = await createTestEnvironment(fixtureDir);
+    const {client, underliner} = await createTestEnvironment({fixtureDir});
 
     const path = 'polymer/element-with-databinding.html';
     const uri = client.converter.getUriForLocalPath(path);

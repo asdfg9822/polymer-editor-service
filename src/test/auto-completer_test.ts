@@ -13,19 +13,24 @@
  */
 
 import {assert} from 'chai';
+import * as clone from 'clone';
 import {readFileSync} from 'fs';
 import * as path from 'path';
 import {ResolvedUrl} from 'polymer-analyzer/lib/model/url';
-import {CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat} from 'vscode-languageserver/lib/main';
+import {CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, MarkupContent} from 'vscode-languageserver/lib/main';
 
-import {createTestEnvironment} from './util';
 import {standardJavaScriptSnippets} from '../standard-snippets';
+
+import {createTestEnvironment, defaultClientCapabilities} from './util';
 
 const fixtureDir = path.join(__dirname, '..', '..', 'src', 'test', 'static');
 
 const elementCompletions: CompletionItem[] = [
   {
-    documentation: 'An element to test out behavior inheritance.',
+    documentation: {
+      kind: 'markdown',
+      value: 'An element to test out behavior inheritance.'
+    },
     insertText: '<behavior-test-elem $1></behavior-test-elem>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -33,7 +38,7 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'behaviortestelem',
   },
   {
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     insertText: '<class-declaration></class-declaration>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -41,7 +46,7 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'classdeclaration',
   },
   {
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     insertText: '<anonymous-class></anonymous-class>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -49,7 +54,7 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'anonymousclass',
   },
   {
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     insertText: '<class-expression></class-expression>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -57,7 +62,7 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'classexpression',
   },
   {
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     insertText: '<register-before-declaration></register-before-declaration>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -65,7 +70,7 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'registerbeforedeclaration',
   },
   {
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     insertText: '<register-before-expression></register-before-expression>$0',
     insertTextFormat: InsertTextFormat.Snippet,
     kind: CompletionItemKind.Class,
@@ -73,7 +78,10 @@ const elementCompletions: CompletionItem[] = [
     filterText: 'registerbeforeexpression',
   },
   {
-    documentation: 'This is a description of WithObservedAttributes.',
+    documentation: {
+      kind: 'markdown',
+      value: 'This is a description of WithObservedAttributes.'
+    },
     insertText: '<vanilla-with-observed-attributes $1>' +
         '</vanilla-with-observed-attributes>$0',
     insertTextFormat: InsertTextFormat.Snippet,
@@ -88,24 +96,31 @@ const elementTagnameCompletions = elementCompletions.map(ec => {
   return {...ec, insertText: ec.insertText!.slice(1)};
 });
 
+const elementCompletionsWithPlainDescriptions = elementCompletions.map(ec => {
+  return {...ec, documentation: (ec.documentation as MarkupContent).value};
+});
+
 const attributeCompletions: CompletionItem[] = [
   {
     label: 'local-property',
-    documentation: 'A property defined directly on behavior-test-elem.',
+    documentation: {
+      kind: 'markdown',
+      value: 'A property defined directly on behavior-test-elem.',
+    },
     kind: CompletionItemKind.Field,
     detail: '{boolean}',
     sortText: 'aaa-local-property',
   },
   {
     label: 'non-notifying-property',
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     kind: CompletionItemKind.Field,
     detail: '{string}',
     sortText: 'aaa-non-notifying-property',
   },
   {
     label: 'notifying-property',
-    documentation: '',
+    documentation: {kind: 'markdown', value: ''},
     kind: CompletionItemKind.Field,
     detail: '{string}',
     sortText: 'aaa-notifying-property',
@@ -113,42 +128,60 @@ const attributeCompletions: CompletionItem[] = [
   },
   {
     label: 'deeply-inherited-property',
-    documentation: 'This is a deeply inherited property.',
+    documentation: {
+      kind: 'markdown',
+      value: 'This is a deeply inherited property.',
+    },
     kind: CompletionItemKind.Field,
     detail: '{Array} ⊃ MyNamespace.SubBehavior',
     sortText: 'ddd-deeply-inherited-property',
   },
   {
     label: 'inherit-please',
-    documentation: 'A property provided by SimpleBehavior.',
+    documentation: {
+      kind: 'markdown',
+      value: 'A property provided by SimpleBehavior.',
+    },
     kind: CompletionItemKind.Field,
     detail: '{number} ⊃ MyNamespace.SimpleBehavior',
     sortText: 'ddd-inherit-please',
   },
   {
     label: 'on-local-property-changed',
-    documentation: 'Fired when the `localProperty` property changes.',
+    documentation: {
+      kind: 'markdown',
+      value: 'Fired when the `localProperty` property changes.'
+    },
     kind: CompletionItemKind.Field,
     detail: '{CustomEvent}',
     sortText: 'eee-aaa-on-local-property-changed',
   },
   {
     label: 'on-notifying-property-changed',
-    documentation: 'Fired when the `notifyingProperty` property changes.',
+    documentation: {
+      kind: 'markdown',
+      value: 'Fired when the `notifyingProperty` property changes.'
+    },
     kind: CompletionItemKind.Field,
     detail: '{CustomEvent}',
     sortText: 'eee-aaa-on-notifying-property-changed',
   },
   {
     label: 'on-deeply-inherited-property-changed',
-    documentation: 'Fired when the `deeplyInheritedProperty` property changes.',
+    documentation: {
+      kind: 'markdown',
+      value: 'Fired when the `deeplyInheritedProperty` property changes.'
+    },
     kind: CompletionItemKind.Field,
     detail: '{CustomEvent} ⊃ MyNamespace.SubBehavior',
     sortText: 'eee-ddd-on-deeply-inherited-property-changed',
   },
   {
     label: 'on-inherit-please-changed',
-    documentation: 'Fired when the `inheritPlease` property changes.',
+    documentation: {
+      kind: 'markdown',
+      value: 'Fired when the `inheritPlease` property changes.'
+    },
     kind: CompletionItemKind.Field,
     detail: '{CustomEvent} ⊃ MyNamespace.SimpleBehavior',
     sortText: 'eee-ddd-on-inherit-please-changed',
@@ -163,7 +196,7 @@ suite('AutoCompleter', () => {
   const localAttributePosition = {line: 7, column: 31};
 
   test('Get element completions for an empty text region.', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     const completions =
         await client.getCompletions(indexFile, {line: 0, column: 0});
@@ -171,8 +204,26 @@ suite('AutoCompleter', () => {
         completions, {isIncomplete: false, items: elementCompletions});
   });
 
+  let testName = `Doesn't send down markdown if the client doesn't support it`;
+  test(testName, async() => {
+    const capabilities = clone(defaultClientCapabilities);
+    capabilities.textDocument!.completion!.completionItem! = {
+      ...(capabilities.textDocument!.completion!.completionItem!),
+      documentationFormat: undefined
+    };
+
+    const {client} = await createTestEnvironment({fixtureDir, capabilities});
+    await client.openFile(indexFile);
+    const completions =
+        await client.getCompletions(indexFile, {line: 0, column: 0});
+
+    assert.deepEqual(
+        completions,
+        {isIncomplete: false, items: elementCompletionsWithPlainDescriptions});
+  });
+
   test('Get element completions for a start tag.', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
 
     await client.openFile(indexFile);
     const completions = await client.getCompletions(indexFile, tagPosition);
@@ -181,7 +232,7 @@ suite('AutoCompleter', () => {
   });
 
   test('Gets element completions with an incomplete tag', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     const incompleteText = `<behav>\n${indexContents}`;
     await client.changeFile(indexFile, incompleteText);
@@ -192,16 +243,16 @@ suite('AutoCompleter', () => {
   });
 
   test('Get element completions for the end of a tag', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     assert.deepEqual(
         await client.getCompletions(indexFile, tagPositionEnd),
         {isIncomplete: false, items: elementTagnameCompletions});
   });
 
-  let testName = 'Get attribute completions when editing an existing attribute';
+  testName = 'Get attribute completions when editing an existing attribute';
   test(testName, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     assert.deepEqual(
         await client.getCompletions(indexFile, localAttributePosition),
@@ -209,7 +260,7 @@ suite('AutoCompleter', () => {
   });
 
   test('Get attribute completions when adding a new attribute', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     const partialContents = [
       `<behavior-test-elem >`, `<behavior-test-elem existing-attr>`,
@@ -221,14 +272,15 @@ suite('AutoCompleter', () => {
       assert.deepEqual(
           await client.getCompletions(indexFile, {
             line: 0,
-            column: 20  // after the space after the element name
+            column: 20  // after the space after the element
+                        // name
           }),
           {isIncomplete: false, items: attributeCompletions});
     }
   });
 
   test('Get attribute completions when adding a new attribute', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
     const partialContents = [
       `<behavior-test-elem >`, `<behavior-test-elem existing-attr>`,
@@ -240,7 +292,8 @@ suite('AutoCompleter', () => {
       assert.deepEqual(
           await client.getCompletions(indexFile, {
             line: 0,
-            column: 20  // after the space after the element name
+            column: 20  // after the space after the element
+                        // name
           }),
           {isIncomplete: false, items: attributeCompletions});
     }
@@ -248,7 +301,7 @@ suite('AutoCompleter', () => {
 
   testName = 'Get attribute value completions for non-notifying property';
   test(testName, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     const testFile = path.join('editor-service', 'value-completion.html');
     const testContents = readFileSync(path.join(fixtureDir, testFile), 'utf-8');
     await client.openFile(testFile, testContents);
@@ -263,7 +316,7 @@ suite('AutoCompleter', () => {
             {
               label: 'bar',
               insertText: '[[bar]]',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               sortText: 'aaa-bar',
               detail: '{string}',
               kind: CompletionItemKind.Field,
@@ -271,7 +324,7 @@ suite('AutoCompleter', () => {
             {
               label: 'foo',
               insertText: '[[foo]]',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               sortText: 'aaa-foo',
               detail: '{string}',
               kind: CompletionItemKind.Field,
@@ -281,7 +334,7 @@ suite('AutoCompleter', () => {
   });
 
   test('Get attribute value completions for notifying property', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     const testFile = path.join('editor-service', 'value-completion.html');
     const testContents = readFileSync(path.join(fixtureDir, testFile), 'utf-8');
     await client.openFile(testFile, testContents);
@@ -295,7 +348,7 @@ suite('AutoCompleter', () => {
           items: [
             {
               insertText: '{{bar}}',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               label: 'bar',
               sortText: 'aaa-bar',
               detail: '{string}',
@@ -303,7 +356,7 @@ suite('AutoCompleter', () => {
             },
             {
               insertText: '{{foo}}',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               label: 'foo',
               sortText: 'aaa-foo',
               detail: '{string}',
@@ -316,7 +369,7 @@ suite('AutoCompleter', () => {
   testName =
       'Get attribute value completions for notifying property without brackets';
   test(testName, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     const testFile = path.join('editor-service', 'value-completion.html');
     const testContents = readFileSync(path.join(fixtureDir, testFile), 'utf-8');
     await client.openFile(testFile, testContents);
@@ -330,7 +383,7 @@ suite('AutoCompleter', () => {
           items: [
             {
               insertText: 'bar',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               label: 'bar',
               sortText: 'aaa-bar',
               detail: '{string}',
@@ -338,7 +391,7 @@ suite('AutoCompleter', () => {
             },
             {
               insertText: 'foo',
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               label: 'foo',
               sortText: 'aaa-foo',
               detail: '{string}',
@@ -349,7 +402,7 @@ suite('AutoCompleter', () => {
   });
 
   test('Inserts slots in autocompletion snippet', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     const slotFile = path.join('editor-service', 'slot.html');
     await client.openFile(
         slotFile, readFileSync(path.join(fixtureDir, slotFile), 'utf-8'));
@@ -370,7 +423,7 @@ suite('AutoCompleter', () => {
                   '\t<$\{5:div\}>$6</$\{5:div\}>\n' +
                   '</slot-test-elem>$0',
               insertTextFormat: InsertTextFormat.Snippet,
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               kind: CompletionItemKind.Class,
               filterText: `slottestelem`,
             },
@@ -378,7 +431,7 @@ suite('AutoCompleter', () => {
               label: '<slot-one-test-elem>',
               insertText: `<slot-one-test-elem>$1</slot-one-test-elem>$0`,
               insertTextFormat: InsertTextFormat.Snippet,
-              documentation: '',
+              documentation: {kind: 'markdown', value: ''},
               kind: CompletionItemKind.Class,
               filterText: `slotonetestelem`,
             }
@@ -387,7 +440,7 @@ suite('AutoCompleter', () => {
   });
 
   test('Recover from references to undefined files.', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
 
     // Load a file that contains a reference error.
@@ -403,21 +456,22 @@ suite('AutoCompleter', () => {
   });
 
   test('Remain useful in the face of unloadable files.', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     await client.openFile(indexFile);
 
     // We load a file that contains a reference error.
     await client.changeFile(indexFile, `${indexContents}
                                      <script src="nonexistant.js"></script>`);
 
-    // Harder: can we give typeahead completion when there's errors?'
+    // Harder: can we give typeahead completion when there's
+    // errors?'
     assert.deepEqual(
         await client.getCompletions(indexFile, localAttributePosition),
         {isIncomplete: false, items: attributeCompletions});
   });
 
   test('Remain useful in the face of syntax errors.', async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
+    const {client} = await createTestEnvironment({fixtureDir});
     const goodContents =
         readFileSync(path.join(fixtureDir, indexFile), 'utf-8');
     // Load a file with a syntax error
@@ -427,19 +481,25 @@ suite('AutoCompleter', () => {
 
     await client.openFile(indexFile, `${goodContents}
                                     <script src="./syntax-error.js"></script>`);
-    // Even with a reference to the bad file we can still get completions!
+    // Even with a reference to the bad file we can still
+    // get completions!
     assert.deepEqual(
         await client.getCompletions(indexFile, localAttributePosition),
         {isIncomplete: false, items: attributeCompletions});
   });
 
-  test(`Return JavaScript standard completions inside of script tags.`, async() => {
-    const {client} = await createTestEnvironment(fixtureDir);
-    await client.openFile(indexFile, '<script>\n\n</script>\n' + indexContents);
-    const completions =
-        await client.getCompletions(indexFile, {line: 1, column: 0});
-    assert.deepEqual(completions, {isIncomplete: false, items: standardJavaScriptSnippets});
-  });
+  test(
+      `Return JavaScript standard completions inside of script tags.`,
+      async() => {
+        const {client} = await createTestEnvironment({fixtureDir});
+        await client.openFile(
+            indexFile, '<script>\n\n</script>\n' + indexContents);
+        const completions =
+            await client.getCompletions(indexFile, {line: 1, column: 0});
+        assert.deepEqual(
+            completions,
+            {isIncomplete: false, items: standardJavaScriptSnippets});
+      });
 
   {
     const fooPropUsePosition = {line: 2, column: 16};
@@ -449,14 +509,14 @@ suite('AutoCompleter', () => {
       isIncomplete: false,
       items: [
         {
-          documentation: 'A private internal prop.',
+          documentation: {kind: 'markdown', value: 'A private internal prop.'},
           label: '_internal',
           sortText: 'aaa-_internal',
           detail: '{string}',
           kind: CompletionItemKind.Field
         },
         {
-          documentation: 'This is the foo property.',
+          documentation: {kind: 'markdown', value: 'This is the foo property.'},
           label: 'foo',
           sortText: 'aaa-foo',
           detail: '{string}',
@@ -465,7 +525,7 @@ suite('AutoCompleter', () => {
       ]
     };
     test('Give autocompletions for positions in databindings.', async() => {
-      const {client} = await createTestEnvironment(fixtureDir);
+      const {client} = await createTestEnvironment({fixtureDir});
       assert.deepEqual(
           await client.getCompletions(
               'polymer/element-with-databinding.html', fooPropUsePosition),
