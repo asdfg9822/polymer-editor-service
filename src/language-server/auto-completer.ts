@@ -67,11 +67,12 @@ export default class AutoCompleter extends Handler {
   private async autoComplete(textPosition: TextDocumentPositionParams):
       Promise<CompletionList> {
     const url = textPosition.textDocument.uri;
-    const document =
+    const result =
         (await this.analyzer.analyze([url], 'autocomplete')).getDocument(url);
-    if (!(document instanceof Document)) {
+    if (!result.successful) {
       return {isIncomplete: true, items: []};
     }
+    const document = result.value;
     const position = this.converter.convertPosition(textPosition.position);
     const completions =
         await this.getTypeaheadCompletionsAtPosition(document, position);

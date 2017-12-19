@@ -27,9 +27,9 @@ suite('HoverDocumenter', function() {
 
   const tagDescription = 'An element to test out behavior inheritance.';
   const localAttributeDescription =
-      '{boolean} A property defined directly on behavior-test-elem.';
+      '{boolean | null | undefined} A property defined directly on behavior-test-elem.';
   const deepAttributeDescription =
-      '{Array} This is a deeply inherited property.';
+      '{Array | null | undefined} This is a deeply inherited property.';
 
   let testName = 'it supports getting the element description ' +
       'when asking for docs at its tag name';

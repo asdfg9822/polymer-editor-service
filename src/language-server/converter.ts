@@ -12,7 +12,7 @@
  */
 
 import * as path from 'path';
-import {Edit, FileRelativeUrl, ResolvedUrl, Severity, SourcePosition, SourceRange, UrlResolver, Warning} from 'polymer-analyzer';
+import {Edit, PackageRelativeUrl, ResolvedUrl, Severity, SourcePosition, SourceRange, UrlResolver, Warning} from 'polymer-analyzer';
 import {Diagnostic, DiagnosticSeverity, Location, Position as LSPosition, Range as LSRange, TextEdit, WorkspaceEdit} from 'vscode-languageserver';
 import Uri from 'vscode-uri';
 
@@ -32,9 +32,7 @@ export default class AnalyzerLSPConverter {
   }
 
   getAnalyzerUrl(document: {uri: string}): ResolvedUrl|undefined {
-    return this.urlResolver.resolve(
-        document.uri as FileRelativeUrl, this.urlResolver.packageUrl,
-        undefined);
+    return this.urlResolver.resolve(document.uri as PackageRelativeUrl);
   }
 
   getUriForLocalPath(localPath: string): string {

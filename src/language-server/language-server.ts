@@ -13,6 +13,7 @@
  */
 
 import {UrlResolver} from 'polymer-analyzer';
+import {PackageUrlResolver} from 'polymer-analyzer/lib/url-loader/package-url-resolver';
 import * as util from 'util';
 import {ClientCapabilities, IConnection, InitializeResult, ServerCapabilities, TextDocuments, TextDocumentSyncKind} from 'vscode-languageserver';
 import Uri from 'vscode-uri';
@@ -65,7 +66,7 @@ export default class LanguageServer extends Handler {
           throw error;
         }
         const urlResolver =
-            await UrlResolver.createForDirectory(workspaceUri.fsPath);
+            new PackageUrlResolver({packageDir: workspaceUri.fsPath});
         const newServer = new LanguageServer(
             connection, workspaceUri, params.capabilities, urlResolver);
         resolve(newServer);

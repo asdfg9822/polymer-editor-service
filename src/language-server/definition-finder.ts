@@ -13,7 +13,7 @@
  */
 
 import * as fuzzaldrin from 'fuzzaldrin';
-import {Analysis, Document, SourcePosition, SourceRange} from 'polymer-analyzer';
+import {Analysis, SourcePosition, SourceRange} from 'polymer-analyzer';
 import {CssCustomPropertyAssignment, CssCustomPropertyUse} from 'polymer-analyzer/lib/css/css-custom-property-scanner';
 import {Queryable} from 'polymer-analyzer/lib/model/queryable';
 import {CodeLens, CodeLensParams, Definition, IConnection, Location, ReferenceParams, SymbolInformation, SymbolKind} from 'vscode-languageserver';
@@ -57,11 +57,11 @@ export default class DefinitionFinder extends Handler {
       const url = params.textDocument.uri;
       const analysis =
           await this.analyzer.analyze([url], 'get document symbols');
-      const maybeDocument = analysis.getDocument(url);
-      if (!(maybeDocument instanceof Document)) {
+      const result = analysis.getDocument(url);
+      if (!result.successful) {
         return [];
       }
-      return this.findSymbols(maybeDocument);
+      return this.findSymbols(result.value);
     });
 
     this.connection.onCodeLens(async(params) => {
@@ -140,10 +140,11 @@ export default class DefinitionFinder extends Handler {
       locations.push(...await this.getDefinition(params, analysis));
     }
 
-    const document = analysis.getDocument(localPath);
-    if (!(document instanceof Document)) {
+    const result = analysis.getDocument(localPath);
+    if (!result.successful) {
       return locations;
     }
+    const document = result.value;
     const astResult =
         await this.featureFinder.getAstAtPosition(document, position);
     if (!astResult) {
@@ -218,10 +219,11 @@ export default class DefinitionFinder extends Handler {
   private async getCodeLenses(params: CodeLensParams) {
     const analysis = await this.analyzer.analyzePackage('get code lenses');
     const uri = params.textDocument.uri;
-    const document = analysis.getDocument(uri);
-    if (!(document instanceof Document)) {
+    const result = analysis.getDocument(uri);
+    if (!result.successful) {
       return [];
     }
+    const document = result.value;
     const lenses: CodeLens[] = [];
     for (const element of document.getFeatures({kind: 'element'})) {
       if (!element.sourceRange || !element.tagName) {
